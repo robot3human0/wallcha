@@ -3,36 +3,41 @@
 //
 
 #include <algorithm>
-#include <iostream>
-#include <filesystem>
-#include <vector>
-#include <string>
 #include <chrono>
+#include <filesystem>
+#include <iostream>
+#include <string>
 #include <thread>
-#include <cstdlib>
-#include <unistd.h> // for fork
-#include <unordered_map>
+#include <unistd.h>
+#include <vector>
 
 namespace fs = std::filesystem;
 
-using StrList = std::vector<std::string>;
+using StrList = std::vector< std::string >;
 
-static StrList image_mime_types { ".jpg", ".jpeg", ".bmp", ".png" };
+static StrList image_mime_types{ ".jpg", ".jpeg", ".bmp", ".png" };
 
-StrList collect_images( const std::string& path )
+StrList collect_images( const std::string &path )
 {
     StrList images;
-    for ( const auto& entry : fs::recursive_directory_iterator( path ) )
+    for ( const auto &entry : fs::recursive_directory_iterator( path ) )
     {
-        if ( !entry.is_regular_file() ) { continue; }
+        if ( !entry.is_regular_file() )
+        {
+            continue;
+        }
 
         auto ext = entry.path().extension().string();
-        for ( auto &c : ext ) c = static_cast< char >( tolower( c ) );
-        
-        bool is_ext_allowed = std::any_of( image_mime_types.begin(), image_mime_types.end(),
-                                            [&ext]( const std::string &ae ) { return ae == ext; } );
+        for ( auto &c : ext )
+            c = static_cast< char >( tolower( c ) );
 
-        if ( is_ext_allowed ) { images.push_back( entry.path().string() ); }
+        bool is_ext_allowed = std::any_of( image_mime_types.begin(), image_mime_types.end(),
+                                           [&ext]( const std::string &ae ) { return ae == ext; } );
+
+        if ( is_ext_allowed )
+        {
+            images.push_back( entry.path().string() );
+        }
     }
 
     return images;
@@ -52,7 +57,7 @@ int main( int argc, char **argv )
         return 1;
     }
 
-    const std::string path = argv[1];
+    const std::string path     = argv[1];
     const int interval_minutes = std::stoi( argv[2] );
 
     if ( !fs::exists( path ) )
@@ -85,7 +90,7 @@ int main( int argc, char **argv )
     if ( pid < 0 ) return 1;
     if ( pid > 0 ) return 0;
 
-    size_t idx {};
+    size_t idx{};
     while ( true )
     {
         set_wallpaper( images[idx] );
