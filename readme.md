@@ -1,24 +1,63 @@
-# Wallpaper Changer 1.0
+# Wallpaper Changer 2.0
+
+## Description
+
+A small C++ daemon for **XFCE** desktop environments that automatically changes the desktop wallpaper at a specified interval.
+The program scans a directory (including subdirectories), collects all supported image files, and cycles through them in an infinite loop.
+
+> This tool requires the xfce4-set-wallpaper script (from Linux Mint’s xapp tools) to apply wallpapers without directly dealing with xfconf-query.
+
+### Supported image formats
+* jpeg / jpg
+* png
+* bmp
 
 ## Dependencies
-Для работы необходим скрипт `https://github.com/linuxmint/xapp/blob/master/scripts/xfce4-set-wallpaper`
+* xfce4-set-wallpaper<br>
+  Source:<br>
+https://github.com/linuxmint/xapp/blob/master/scripts/xfce4-set-wallpaper or take it from **resources** directory.
 
-Что бы избежать прямой работы с **xfconf-query**.<br>
-В некоторых дистрибутивах присутствует по умолчанию, но в **Zorin OS Lite** не было.
+> the script needs to be installed manually.
 
-## About
-Утилита/демон для рабочего окружения XFCE, на C++.<br>
-Автоматически меняет обои через заданный временной интервал в минутах.<br>
+## Usage
+```
+wallcha -d <path/to/directory> -c <minutes>
+```
 
-Максимальный интервал - **60 x 24 минут** (сутки).<br>
-Минимальный интервал - 1 минута.<br>
-Поддерживаемые форматы - JPEG, BMP, PNG. 
+## Options
+```
+-d, --directory   Path to the wallpaper directory.
+-c, --count       Interval between wallpaper changes in minutes.
+                  If not provided, the default is 30 minutes.
+-h, --help        Show help.
+-v, --version     Show version.
+```
 
-## Work flow:
-* Первый аргумент путь к каталогу с обоями.<br>
-  Программа рекурсивно обходит каталог и подкаталоги, формируя список.
-* Если ошибок не возникло программа уходит в фоновый режим. 
-* Второй аргумент - интервал смены в минутах. 
-* Программа работает циклично.
-* Программа хранит список в памяти, имейте в виду, что если вы ограничены в<br>
-  памяти стоит избегать экстремально объёмные по количеству каталоги.   
+## Examples
+
+Run with directory and a custom interval:
+
+```
+wallpaperd -d ~/Pictures/wallpapers -c 10
+```
+
+Run with default interval (30 minutes):
+```
+wallpaperd -d ~/Pictures/wallpapers
+```
+
+### Behavior
+* Recursively scans the specified directory and collects all valid image files.
+* Validates arguments and directory existence.
+* Forks into background and runs as a simple daemon.
+* Changes wallpaper in a loop, cycling through the list.
+* Does not reload files at runtime (planned for future versions).
+
+### Notes
+* Maximum allowed interval: 1440 minutes (24 hours).
+* Minimum interval: 1 minute (0 sets default 30 minutes).
+* The list of images is kept in memory for the whole runtime.
+* Requires XFCE environment.
+
+---
+BTW, I put my favorite wallpapers collection to **wallpapers** directory, I choose 24 images special for you stranger =)
