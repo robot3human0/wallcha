@@ -5,22 +5,53 @@
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
+#include <getopt.h>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <unistd.h>
 #include <vector>
 
-namespace fs = std::filesystem;
+#define MAJOR_VERSION 2
+#define MINOR_VERSION 0
+
+namespace
+{
+
+constexpr int kDefaultInterval = 30;
 
 using StrList = std::vector< std::string >;
 
-static StrList image_mime_types{ ".jpg", ".jpeg", ".bmp", ".png" };
+StrList image_mime_types{ ".jpg", ".jpeg", ".bmp", ".png" };
+
+const char* short_opts = "d:c:hv";
+
+const option long_opts[] = {
+    { "directory", required_argument, nullptr, 'd' },
+    { "count",     required_argument, nullptr, 'c' },
+    { "help",      no_argument,       nullptr, 'h' },
+    { "version",   no_argument,       nullptr, 'v' },
+    { nullptr,     0,                 nullptr,  0  }
+};
+
+void help( const std::string &project_name )
+{
+    std::cout << "Usage: " << project_name << " -d <path/to/directory> -c <minutes>\n"
+                             "Options:\n"
+                             "  -d, --directory  Path to the wallpaper directory.\n"
+                             "  -c, --count      Interval between wallpaper changes in minutes,\n"
+                             "                   if not provided, default interval 30 min.\n"
+                             "  -h, --help       Show this help.\n"
+                             "  -v, --version    Show version.\n"
+                ;
+}
+
+} // end unnamed namespace
 
 StrList collect_images( const std::string &path )
 {
     StrList images;
-    for ( const auto &entry : fs::recursive_directory_iterator( path ) )
+    for ( const auto &entry : std::filesystem::recursive_directory_iterator( path ) )
     {
         if ( !entry.is_regular_file() )
         {
@@ -45,31 +76,61 @@ StrList collect_images( const std::string &path )
 
 void set_wallpaper( const std::string &path )
 {
-    const std::string cmd = "xfce4-set-wallpaper " + path;
+    const std::string cmd = "xfce4-set-wallpaper \"" + path + "\"";
     system( cmd.c_str() );
 }
 
 int main( int argc, char **argv )
 {
-    if ( argc != 3 )
+    if ( argc == 1 )
     {
-        std::cerr << "Usage: " << argv[0] << " <directory> <interval_minutes>" << std::endl;
+        help( argv[0] );
         return 1;
     }
 
-    const std::string path     = argv[1];
-    const int interval_minutes = std::stoi( argv[2] );
+    std::string path {};
+    int interval_minutes {};
 
-    if ( !fs::exists( path ) )
+    while ( true )
+    {
+        int opt = getopt_long( argc, argv, short_opts, long_opts, nullptr );
+
+        if ( opt == -1 ) break;
+
+        switch ( opt )
+        {
+            case 'd':
+                path = optarg;
+                break;
+            case 'c':
+                interval_minutes = std::stoi( optarg );
+                break;
+            case 'h':
+                help( argv[0] );
+                return 0;
+            case 'v':
+                std::cout << "Version: " << MAJOR_VERSION << "." << MINOR_VERSION << std::endl;
+                return 0;
+            default:
+                std::cerr << "Unknown option: " << opt << std::endl;
+                return 1;
+        }
+    }
+
+    if ( !std::filesystem::exists( path ) )
     {
         std::cerr << "Directory " << path << " does not exist" << std::endl;
         return 1;
     }
 
-    if ( interval_minutes <= 0 )
+    if ( interval_minutes < 0 )
     {
         std::cerr << "The interval " << interval_minutes << " must be greater than 0" << std::endl;
         return 1;
+    }
+    else if ( interval_minutes == 0 )
+    {
+        interval_minutes = kDefaultInterval;
     }
 
     constexpr int day_minutes = 60 * 24;
